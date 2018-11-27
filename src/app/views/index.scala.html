@@ -1,0 +1,240 @@
+@(message: String, client: Option[net.mtgto.domain.Client], isConnected: Boolean, channels: Seq[net.mtgto.domain.Channel], bots: Seq[net.mtgto.domain.Bot], users: Seq[net.mtgto.domain.User])(implicit flash: Flash)
+
+@headers = {}
+@footers = {
+<script>
+  $(function(){
+      $('#add_channel_cancel').click(
+          function(){
+              $('#modal_add_channel').modal('hide');
+          }
+      );
+      $('a.add_channel').click(
+          function(){
+              $('#modal_add_channel').modal('show');
+          }
+      );
+      $('#add_channel_submit').click(
+          function(){
+              $('#form_add_channel').submit();
+          }
+      );
+  });
+  $(function(){
+      $('#create_user_cancel').click(
+          function(){
+              $('#modal_create_user').modal('hide');
+          }
+      );
+      $('a.create_user').click(
+          function(){
+              $('#modal_create_user').modal('show');
+          }
+      );
+      $('#create_user_submit').click(
+          function(){
+              $('#form_create_user').submit();
+          }
+      );
+  });
+  $(function(){
+      $('#change_password_cancel').click(
+          function(){
+              $('#modal_change_password').modal('hide');
+          }
+      );
+      $('a.change_password').click(
+          function(){
+              $('#modal_change_password').modal('show');
+          }
+      );
+      $('#change_password_submit').click(
+          function(){
+              $('#form_change_password').submit();
+          }
+      );
+  });
+</script>
+}
+@main("トップページ", headers, footers) {
+  <div class='modal hide' id='modal_add_channel'>
+    @helper.form(action = net.mtgto.controllers.routes.ChannelController.create, 'id -> "form_add_channel") {
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3 id='modal_add_channel_title'>追加チャンネル名を入力してね</h3>
+      </div>
+      <div class="modal-body">
+        <input type="text" placeholder="チャンネル名" id="add_channel_name" name="name"></input>
+      </div>
+      <div class="modal-footer">
+        <a href="#" class="btn" id="add_channel_cancel">キャンセル</a>
+        <a href="#" class="btn btn-primary" id="add_channel_submit">追加</a>
+      </div>
+    }
+  </div>
+  <div class='modal hide' id='modal_create_user'>
+    @helper.form(action = net.mtgto.controllers.routes.UserController.create, 'id -> "form_create_user") {
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3 id='modal_create_user_title'>新規ユーザを追加します</h3>
+      </div>
+      <div class="modal-body">
+        <input type="text" placeholder="名前" id="create_user_name" name="name"></input>
+        <input type="password" placeholder="パスワード" id="create_user_password" name="password"></input>
+      </div>
+      <div class="modal-footer">
+        <a href="#" class="btn" id="create_user_cancel">キャンセル</a>
+        <a href="#" class="btn btn-primary" id="create_user_submit">変更</a>
+      </div>
+    }
+  </div>
+  <div class='modal hide' id='modal_change_password'>
+    @helper.form(action = net.mtgto.controllers.routes.UserController.changePassword, 'id -> "form_change_password") {
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3 id='modal_change_password_title'>パスワードを変更します</h3>
+      </div>
+      <div class="modal-body">
+        <input type="password" placeholder="古いパスワード" id="change_password_old_password" name="oldPassword"></input>
+        <input type="password" placeholder="新しいパスワード" id="change_password_new_password" name="newPassword"></input>
+      </div>
+      <div class="modal-footer">
+        <a href="#" class="btn" id="change_password_cancel">キャンセル</a>
+        <a href="#" class="btn btn-primary" id="change_password_submit">変更</a>
+      </div>
+    }
+  </div>
+
+  <h1>@message</h1>
+  <section id="clients" class="container">
+    <h2>クライアント</h2>
+    @client match {
+      case Some(client) => {
+        <table class="table table-condensed table-striped">
+          <thead>
+            <tr>
+              <th>名前</th>
+              <th>値</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ホスト名</td>
+              <td>@client.hostname</td>
+            </tr>
+            <tr>
+              <td>ポート</td>
+              <td>@client.port</td>
+            </tr>
+            <tr>
+              <td>パスワード</td>
+              <td>@client.password.getOrElse("(なし)")</td>
+            </tr>
+            <tr>
+              <td>エンコーディング</td>
+              <td>@client.encoding</td>
+            </tr>
+            <tr>
+              <td>メッセージ間隔 (msec)</td>
+              <td>@client.messageDelay</td>
+            </tr>
+            <tr>
+              <td>タイマー間隔 (msec)</td>
+              <td>@client.timerDelay</td>
+            </tr>
+            <tr>
+              <td>ニックネーム</td>
+              <td>@client.nickname</td>
+            </tr>
+            <tr>
+              <td>ユーザネーム</td>
+              <td>@client.username</td>
+            </tr>
+            <tr>
+              <td>リアルネーム</td>
+              <td>@client.realname</td>
+            </tr>
+          </tbody>
+        </table>
+        @if(isConnected){
+          <a class="btn" href="@net.mtgto.controllers.routes.Application.disconnect">切断</a>
+        }else{
+          <a class="btn" href="@net.mtgto.controllers.routes.Application.connect">接続</a>
+        }
+        <a class="btn" href="@net.mtgto.controllers.routes.ClientController.showEditView(client.identity.value.toString)">編集</a>
+      }
+      case None => {
+        クライアント指定してないよ
+        <a class="btn" href="@net.mtgto.controllers.routes.ClientController.showCreateView">追加</a>
+      }
+    }
+  </section>
+  <section id="channels" class="container">
+    <h2>チャンネル</h2>
+    <table class="table table-condensed table-striped">
+      <thead>
+        <tr>
+          <th>名前</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for(channel <- channels) {
+          <tr>
+            <td>@channel.name</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <a class="btn add_channel" href="#">追加</a>
+  </section>
+  <section id="bots" class="container">
+    <h2>ボット</h2>
+      <table class="table table-condensed table-striped">
+      <thead>
+        <tr>
+          <th>名前</th>
+          <th>設定</th>
+          <th>有効</th>
+          <th>編集</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for(bot <- bots) {
+          <tr>
+            <td>@bot.name</td>
+            <td>@if(bot.config.isEmpty){(なし)}else{(あり)}</td>
+            <td>
+            @if(bot.enabled) {
+              <a href="@net.mtgto.controllers.routes.BotController.disable(bot.identity.value.toString)">有効</a>
+            } else {
+              <a href="@net.mtgto.controllers.routes.BotController.enable(bot.identity.value.toString)">無効</a>
+            }
+            </td>
+            <td><a href="@net.mtgto.controllers.routes.BotController.showEditView(bot.identity.value.toString)">編集</a></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <a class="btn" href="@net.mtgto.controllers.routes.BotController.showCreateView">追加</a>
+  </section>
+    <section id="users" class="container">
+    <h2>ユーザ</h2>
+      <table class="table table-condensed table-striped">
+        <thead>
+          <tr>
+            <th>名前</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for(user <- users) {
+            <tr>
+              <td>@user.name</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <a class="btn" href="@net.mtgto.controllers.routes.UserController.logout">ログアウト</a>
+      <a class="btn create_user" href="#">ユーザ追加</a>
+      <a class="btn change_password" href="#">パスワード変更</a>
+  </section>
+}
